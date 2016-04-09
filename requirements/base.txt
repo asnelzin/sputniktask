@@ -5,3 +5,4 @@ django-rest-swagger==0.3.5
 drf-extensions==0.2.8
 django-redis==4.3.0
 redis==2.10.5
+requests==2.9.1
