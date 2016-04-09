@@ -1,6 +1,5 @@
 # Django settings for sputniktask project.
 import os
-
 from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
