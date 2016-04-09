@@ -8,6 +8,8 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
 
     url(r'^accounts/', include('sputniktask.apps.accounts.urls', namespace='accounts')),
+
+    url(r'^docs/', include('rest_framework_swagger.urls')),
 ]
 
 if settings.DEBUG:

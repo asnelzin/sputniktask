@@ -15,12 +15,27 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
     model = ExpiringToken
 
     def post(self, request, *args, **kwargs):
+        """
+        ---
+        type:
+            token:
+                type: string
+                required: true
+
+        consumes:
+            - application/json
+
+        produces:
+            - application/json
+
+        request_serializer: rest_framework.authtoken.serializers.AuthTokenSerializer
+        """
         serializer = AuthTokenSerializer(data=request.data)
 
         if serializer.is_valid():
             token, _ = ExpiringToken.objects.get_or_create(user=serializer.validated_data['user'])
 
-            if token.expired():
+            if not token.user.is_superuser and token.expired():
                 # If the token is expired, generate a new one.
                 token.delete()
                 token = ExpiringToken.objects.create(user=serializer.validated_data['user'])
