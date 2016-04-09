@@ -127,6 +127,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.humanize',
     'django.contrib.sitemaps',
+
+    'rest_framework',
+    'rest_framework.authtoken',
+
+    'sputniktask.apps.accounts',
 )
 
 CACHES = {
@@ -184,3 +189,13 @@ LOGGING = {
     }
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'sputniktask.apps.accounts.authentication.ExpiringTokenAuthentication',
+    )
+}
+
+TOKEN_LIFESPAN = timedelta(seconds=30)
+
+MARVEL_PUBLIC_KEY = '8fbfd27e0ebbe5eed25747e1130c67a5'
+MARVEL_SECRET_KEY = 'fdc2e35f430df90f9b14ca34d569e801b3fe5722'
