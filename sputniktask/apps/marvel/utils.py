@@ -3,8 +3,7 @@ from rest_framework_extensions.key_constructor.bits import (ArgsKeyBit,
                                                             KwargsKeyBit,
                                                             QueryParamsKeyBit,
                                                             UserKeyBit)
-from rest_framework_extensions.key_constructor.constructors import \
-    DefaultKeyConstructor
+from rest_framework_extensions.key_constructor.constructors import DefaultKeyConstructor
 
 
 class RequestKeyConstructor(DefaultKeyConstructor):
@@ -13,3 +12,5 @@ class RequestKeyConstructor(DefaultKeyConstructor):
     query_params = QueryParamsKeyBit()
     user = UserKeyBit()
     headers = HeadersKeyBit()
+
+request_key_func = RequestKeyConstructor()

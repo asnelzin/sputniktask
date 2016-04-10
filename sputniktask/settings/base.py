@@ -195,7 +195,13 @@ REST_FRAMEWORK = {
     )
 }
 
-TOKEN_LIFESPAN = timedelta(seconds=30)
+REST_FRAMEWORK_EXTENSIONS = {
+    'DEFAULT_CACHE_RESPONSE_TIMEOUT': 60 * 15,
+    'DEFAULT_CACHE_KEY_FUNC': 'sputniktask.apps.marvel.utils.request_key_func'
+}
 
+TOKEN_LIFESPAN = timedelta(hours=24)
+
+MARVEL_API_URL = 'http://gateway.marvel.com:80/v1/public/'
 MARVEL_PUBLIC_KEY = '8fbfd27e0ebbe5eed25747e1130c67a5'
 MARVEL_SECRET_KEY = 'fdc2e35f430df90f9b14ca34d569e801b3fe5722'

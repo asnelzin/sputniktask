@@ -12,13 +12,18 @@ from rest_framework_extensions.cache.decorators import cache_response
 from sputniktask.apps.accounts.authentication import ExpiringTokenAuthentication
 from sputniktask.apps.marvel.serializers import ComicsListSerializer, OffsetPaginationSerializer
 
-from .utils import RequestKeyConstructor
 
+class MarvelAPIMixIn(APIView):
+    authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
-class MarvelAPIRequestFactory(object):
-    URL = 'http://gateway.marvel.com:80/v1/public/'
+    api_method = None
+    default_params = None
 
-    def get_signature(self):
+    serializer_class = OffsetPaginationSerializer
+
+    @staticmethod
+    def get_signature():
         ts = str(time.time())
         return {
             'ts': ts,
@@ -28,10 +33,10 @@ class MarvelAPIRequestFactory(object):
 
     def call_api(self, method, params):
         query_params = dict(params, **self.get_signature())
-        return requests.get(self.URL + method, params=query_params)
+        return requests.get(settings.MARVEL_API_URL + method, params=query_params)
 
 
-class ComicsListWithTitle(APIView, MarvelAPIRequestFactory):
+class ComicsListWithTitle(MarvelAPIMixIn):
     """
     Get the list of comics with specific title.
 
@@ -39,11 +44,7 @@ class ComicsListWithTitle(APIView, MarvelAPIRequestFactory):
     [developer.marvel.com](http://developer.marvel.com/docs#!/public/getComicsCollection_get_6)
     """
 
-    authentication_classes = (ExpiringTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
     api_method = 'comics'
-
     default_params = {
         'format': 'comic',
         'formatType': 'comic',
@@ -52,7 +53,9 @@ class ComicsListWithTitle(APIView, MarvelAPIRequestFactory):
         'offset': 0,
     }
 
-    @cache_response(key_func=RequestKeyConstructor())
+    serializer_class = ComicsListSerializer
+
+    @cache_response()
     def get(self, request, *args, **kwargs):
         """
         ---
@@ -73,36 +76,31 @@ class ComicsListWithTitle(APIView, MarvelAPIRequestFactory):
               type: int
               paramType: query
         """
-        serializer = ComicsListSerializer(data=request.query_params)
-
+        serializer = self.serializer_class(data=request.query_params)
         if serializer.is_valid():
             params = self.default_params.copy()
             params.update(**serializer.data)
             response = self.call_api(self.api_method, params)
             return Response(response.json(), status=response.status_code)
-
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class HeroEventsList(APIView, MarvelAPIRequestFactory):
+class HeroEventsList(MarvelAPIMixIn):
     """
     Get the list of events which related to the provided character.
 
     Response object and errors is described at
     [developer.marvel.com](http://developer.marvel.com/docs#!/public/getEventsCollection_get_18)
     """
-    authentication_classes = (ExpiringTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
 
     api_method = 'events'
-
     default_params = {
         'characters': None,
         'limit': 10,
         'offset': 0
     }
 
-    @cache_response(key_func=RequestKeyConstructor())
+    @cache_response()
     def get(self, request, *args, **kwargs):
         """
         ---
@@ -118,7 +116,7 @@ class HeroEventsList(APIView, MarvelAPIRequestFactory):
               type: int
               paramType: query
         """
-        serializer = OffsetPaginationSerializer(data=request.query_params)
+        serializer = self.serializer_class(data=request.query_params)
         if serializer.is_valid():
             params = self.default_params.copy()
             params.update(characters=kwargs['hero_id'], **serializer.data)
@@ -127,7 +125,7 @@ class HeroEventsList(APIView, MarvelAPIRequestFactory):
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class ComicsListWithSimilarAuthors(APIView, MarvelAPIRequestFactory):
+class ComicsListWithSimilarAuthors(MarvelAPIMixIn):
     """
     Get the list of comics which have similar creators as a provided one.
 
@@ -135,11 +133,7 @@ class ComicsListWithSimilarAuthors(APIView, MarvelAPIRequestFactory):
     [developer.marvel.com](http://developer.marvel.com/docs#!/public/getComicsCollection_get_6)
     """
 
-    authentication_classes = (ExpiringTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
     api_method = 'comics'
-
     default_params = {
         'creators': '',
         'format': 'comic',
@@ -149,7 +143,7 @@ class ComicsListWithSimilarAuthors(APIView, MarvelAPIRequestFactory):
         'offset': 0
     }
 
-    @cache_response(key_func=RequestKeyConstructor())
+    @cache_response()
     def get(self, request, *args, **kwargs):
         """
         ---
@@ -165,7 +159,7 @@ class ComicsListWithSimilarAuthors(APIView, MarvelAPIRequestFactory):
               type: int
               paramType: query
         """
-        serializer = OffsetPaginationSerializer(data=request.query_params)
+        serializer = self.serializer_class(data=request.query_params)
         if serializer.is_valid():
             response = self.call_api('comics/{}/creators'.format(kwargs['comic_id']), {'limit': 100})
             if response.status_code == 200:
@@ -182,7 +176,7 @@ class ComicsListWithSimilarAuthors(APIView, MarvelAPIRequestFactory):
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class ComicsListWithSimilarCharacters(APIView, MarvelAPIRequestFactory):
+class ComicsListWithSimilarCharacters(MarvelAPIMixIn):
     """
     Get the list of comics which have similar characters as a provided one.
 
@@ -190,11 +184,7 @@ class ComicsListWithSimilarCharacters(APIView, MarvelAPIRequestFactory):
     [developer.marvel.com](http://developer.marvel.com/docs#!/public/getComicsCollection_get_6)
     """
 
-    authentication_classes = (ExpiringTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
     api_method = 'comics'
-
     default_params = {
         'characters': '',
         'format': 'comic',
@@ -204,7 +194,7 @@ class ComicsListWithSimilarCharacters(APIView, MarvelAPIRequestFactory):
         'offset': 0
     }
 
-    @cache_response(key_func=RequestKeyConstructor())
+    @cache_response()
     def get(self, request, *args, **kwargs):
         """
         ---
@@ -220,7 +210,7 @@ class ComicsListWithSimilarCharacters(APIView, MarvelAPIRequestFactory):
               type: int
               paramType: query
         """
-        serializer = OffsetPaginationSerializer(data=request.query_params)
+        serializer = self.serializer_class(data=request.query_params)
         if serializer.is_valid():
             response = self.call_api('comics/{}/characters'.format(kwargs['comic_id']), {'limit': 100})
             if response.status_code == 200:
@@ -237,7 +227,7 @@ class ComicsListWithSimilarCharacters(APIView, MarvelAPIRequestFactory):
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
-class ComicsListFromSameSeries(APIView, MarvelAPIRequestFactory):
+class ComicsListFromSameSeries(MarvelAPIMixIn):
     """
     Get the list of comics from the same series as a provided one.
 
@@ -245,11 +235,7 @@ class ComicsListFromSameSeries(APIView, MarvelAPIRequestFactory):
     [developer.marvel.com](http://developer.marvel.com/docs#!/public/getComicsCollection_get_6)
     """
 
-    authentication_classes = (ExpiringTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
     api_method = 'comics'
-
     default_params = {
         'series': '',
         'format': 'comic',
@@ -259,7 +245,7 @@ class ComicsListFromSameSeries(APIView, MarvelAPIRequestFactory):
         'offset': 0
     }
 
-    @cache_response(key_func=RequestKeyConstructor())
+    @cache_response()
     def get(self, request, *args, **kwargs):
         """
         ---
@@ -275,7 +261,7 @@ class ComicsListFromSameSeries(APIView, MarvelAPIRequestFactory):
               type: int
               paramType: query
         """
-        serializer = OffsetPaginationSerializer(data=request.query_params)
+        serializer = self.serializer_class(data=request.query_params)
         if serializer.is_valid():
             response = self.call_api('series', {'limit': 1,
                                                 'comics': kwargs['comic_id']})
