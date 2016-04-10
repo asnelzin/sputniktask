@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework_extensions.cache.decorators import cache_response
 
 from sputniktask.apps.accounts.authentication import ExpiringTokenAuthentication
-from sputniktask.apps.marvel.serializers import ComicsListSerializer
+from sputniktask.apps.marvel.serializers import ComicsListSerializer, OffsetPaginationSerializer
 
 from .utils import RequestKeyConstructor
 
@@ -78,4 +78,40 @@ class ComicsListWithTitle(APIView, MarvelAPIRequestFactory):
             response = self.call_api(self.api_method, params)
             return Response(response.json(), status=response.status_code)
 
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class HeroEventsList(APIView, MarvelAPIRequestFactory):
+
+    authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    api_method = 'events'
+
+    default_params = {
+        'characters': None,
+        'limit': 10,
+        'offset': 0
+    }
+
+    @cache_response(key_func=RequestKeyConstructor())
+    def get(self, request, *args, **kwargs):
+        """
+        ---
+        parameters:
+            - name: limit
+              required: false
+              type: int
+              paramType: query
+            - name: offset
+              required: false
+              type: int
+              paramType: query
+        """
+        serializer = OffsetPaginationSerializer(data=request.query_params)
+        if serializer.is_valid():
+            params = self.default_params.copy()
+            params.update(characters=kwargs['hero_id'], **serializer.data)
+            response = self.call_api(self.api_method, params)
+            return Response(response.json(), status=response.status_code)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
